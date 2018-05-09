@@ -136,7 +136,7 @@ func main() {
 			if !pingRes.Reachable {
 				av = "TANGO DOWN!"
 				for _, admin := range tgAdmins {
-					bot.Send(tgbotapi.NewMessage(admin, ip+" - TANGO DOWN!"))
+					bot.Send(tgbotapi.NewMessage(admin, "❌ IP ADDRESS "+ip+" NOT REACHABLE ❌"))
 				}
 			}
 			log.Println("Ping result from " + pingRes.Source + ": " + av)
