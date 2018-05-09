@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -140,9 +139,9 @@ func main() {
 					bot.Send(tgbotapi.NewMessage(admin, ip+" - TANGO DOWN!"))
 				}
 			}
-			fmt.Println("Ping result from " + pingRes.Source + ": " + av)
+			log.Println("Ping result from " + pingRes.Source + ": " + av)
 		}
-		fmt.Println("IPs finished, rechecking in " + strconv.Itoa(config.PingInterval) + " seconds")
+		log.Println("IPs finished, rechecking in " + strconv.Itoa(config.PingInterval) + " seconds")
 		time.Sleep(time.Second * time.Duration(config.PingInterval))
 	}
 
@@ -153,8 +152,8 @@ func pingIP(ip string) pingReply {
 	iping, err := ping.NewPinger(ip)
 	if err != nil {
 		//panic(err)
-		fmt.Println("Error!")
-		fmt.Println(err)
+		log.Println("Error!")
+		log.Println(err)
 		reply.Error = err
 		return reply
 	}
