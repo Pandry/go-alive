@@ -1,18 +1,28 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
+	"github.com/BurntSushi/toml"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/sparrc/go-ping"
 )
 
-//"github.com/sparrc/go-ping"
+type configStruct struct {
+	BotToken              string
+	IPList                []string
+	TelegramNotifiedUsers []int64
+	PingAttempts          int
+	PingInterval          int
+	PingTimeout           int
+}
 
 type pingReply struct {
 	Source    string
@@ -21,8 +31,14 @@ type pingReply struct {
 	Error     error
 }
 
-func main() {
+//configuration struct, line 18
+var config configStruct
 
+//Configuration file flag
+var configFile = flag.String("file", "", "Path to the configuration file. By default ./config.toml")
+
+func main() {
+	//CTRL + C handling
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
@@ -32,24 +48,41 @@ func main() {
 		}
 	}()
 
-	//Init bot
-	bot, err := tgbotapi.NewBotAPI("144847736:AAGWBPiFCaejWlFCIW7bnsaNfB3_NUlLqV0")
+	//Configuration file flag for shorter flag
+	flag.StringVar(configFile, "f", "config.toml", "Path to the configuration file. By default ./config.toml")
+	//Parses the flags
+	flag.Parse()
+	//Reads the config
+	config = readConfig()
+	//Checks if the config is valid
+	checkConfig()
+
+	//Init Telegram bot
+	bot, err := tgbotapi.NewBotAPI(config.BotToken)
+	//Checks for errors
 	if err != nil {
 		log.Panic(err)
 	}
+	//Silences the debug messages
 	bot.Debug = false
 
-	IPs := [...]string{"8.8.8.8", "8.8.4.4", "8.4.8.4", "192.168.1.100", "10.0.0.1", "10.0.1.1", "10.1.1.1"}
-	tgAdmins := [...]int64{14092073}
+	//Sets the IPs to check from the configuration file
+	IPs := config.IPList
+	//Sets the chats to notify the down to
+	tgAdmins := config.TelegramNotifiedUsers
 
+	//Struct referred at line 27, contains the results of the ping
 	var pingRes pingReply
 
+	//Cicles forever, until CTRL + C is pressed
 	for true {
+		//Cicles every IP to check
 		for _, ip := range IPs {
-
+			//Pings the IP
 			pingRes = pingIP(ip)
 
 			av := "IT'S ALIVE!"
+			//If it's not reachable, sends the notification
 			if !pingRes.Reachable {
 				av = "TANGO DOWN!"
 				for _, admin := range tgAdmins {
@@ -58,8 +91,8 @@ func main() {
 			}
 			fmt.Println("Ping result from " + pingRes.Source + ": " + av)
 		}
-		fmt.Println("IPs finished, rechecking in 20 seconds")
-		time.Sleep(time.Second * 20)
+		fmt.Println("IPs finished, rechecking in " + strconv.Itoa(config.PingInterval) + " seconds")
+		time.Sleep(time.Second * time.Duration(config.PingInterval))
 	}
 
 }
@@ -75,8 +108,8 @@ func pingIP(ip string) pingReply {
 		return reply
 	}
 	iping.SetPrivileged(true)
-	iping.Timeout = time.Second * 5
-	iping.Count = 1
+	iping.Timeout = time.Second * time.Duration(config.PingTimeout)
+	iping.Count = config.PingAttempts
 	iping.Run()                 // blocks until finished
 	stats := iping.Statistics() // get send/receive/rtt stats
 	if stats.PacketLoss < 100 {
@@ -84,4 +117,62 @@ func pingIP(ip string) pingReply {
 	}
 	reply.Latency = stats.AvgRtt
 	return reply
+}
+
+func readConfig() configStruct {
+	_, err := os.Stat(*configFile)
+	if err != nil {
+		log.Fatal("Config file is missing: ", *configFile)
+	}
+	log.Println("Reading \"" + *configFile + "\" as toml configuration file")
+	var config configStruct
+	if _, err := toml.DecodeFile(*configFile, &config); err != nil {
+		log.Fatal(err)
+	}
+	//log.Print(config.Index)
+	return config
+}
+
+func checkConfig() {
+	panic := false
+	if len(config.BotToken) == 0 {
+		log.Println("Warning, the \"BotToken\" prop is not set in the configuration file!")
+		panic = true
+	}
+	if len(config.IPList) == 0 {
+		log.Println("Warning, the \"IPList\" prop is not set in the configuration file!")
+		panic = true
+	}
+	if config.PingInterval == 0 {
+		log.Println("Warning, the \"PingInterval\" prop is not set in the configuration file!")
+		panic = true
+	}
+	if config.PingInterval < 0 {
+		log.Println("Warning, the \"PingInterval\" prop is invalid!")
+		panic = true
+	}
+	if config.PingTimeout == 0 {
+		log.Println("Warning, the \"PingTimeout\" prop is not set in the configuration file!")
+		panic = true
+	}
+	if config.PingTimeout < 0 {
+		log.Println("Warning, the \"PingTimeout\" prop is invalid!")
+		panic = true
+	}
+	if config.PingAttempts == 0 {
+		log.Println("Warning, the \"PingAttempts\" prop is not set in the configuration file!")
+		panic = true
+	}
+	if config.PingAttempts < 0 {
+		log.Println("Warning, the \"PingAttempts\" prop is invalid!")
+		panic = true
+	}
+	if len(config.TelegramNotifiedUsers) == 0 {
+		log.Println("Warning, the \"TelegramNotifiedUsers\" prop is not set in the configuration file!")
+		panic = true
+	}
+	if panic {
+		log.Panic("Panic'd!")
+	}
+
 }
