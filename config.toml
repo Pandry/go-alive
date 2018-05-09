@@ -1,0 +1,6 @@
+BotToken="123456:YouTGBOTAPIKEY"
+IPList=["1.2.3.4"]
+TelegramNotifiedUsers=[14123456]
+PingAttempts=2
+PingInterval=2
+PingTimeout=2
