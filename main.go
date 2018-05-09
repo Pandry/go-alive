@@ -223,7 +223,7 @@ func checkConfig() {
 		panic = true
 	}
 	if panic {
-		log.Panic("Panic'd!")
+		os.Exit(1)
 	}
 
 }
