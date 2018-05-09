@@ -1,6 +1,12 @@
+#This is the Telegram API key for the bot
 BotToken="123456:YouTGBOTAPIKEY"
+#This array contains the IPs you would like to check
 IPList=["1.2.3.4"]
+#This array contains the telegram chats you would like to notify
 TelegramNotifiedUsers=[14123456]
+#This number indicates the number of ping requests the bot sould do for every iteration
 PingAttempts=2
+#This number indicates the seconds between every iteration
 PingInterval=2
+#This number indicates the seconds of max timeout allowed for every ping request
 PingTimeout=2
