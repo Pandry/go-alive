@@ -12,6 +12,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/howeyc/fsnotify"
 	"github.com/sparrc/go-ping"
 )
 
@@ -38,7 +39,10 @@ var config configStruct
 var configFile = flag.String("file", "", "Path to the configuration file. By default ./config.toml")
 
 func main() {
-	//CTRL + C handling
+	///
+	//	Keyboard interrupts manager
+	//		This handles the keyboard interrupts such as CTRL + C
+	///
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
@@ -48,6 +52,10 @@ func main() {
 		}
 	}()
 
+	///
+	//	Config initializer
+	//		This handles the keyboard interrupts such as CTRL + C
+	///
 	//Configuration file flag for shorter flag
 	flag.StringVar(configFile, "f", "config.toml", "Path to the configuration file. By default ./config.toml")
 	//Parses the flags
@@ -57,7 +65,49 @@ func main() {
 	//Checks if the config is valid
 	checkConfig()
 
-	//Init Telegram bot
+	///
+	//	Configuration file watcher
+	//		Checks for changes to the configuration file and applies them
+	///
+
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	go func() {
+		for {
+			select {
+			case ev := <-watcher.Event:
+				if ev.IsModify() {
+					//Configuration has been changed!
+					log.Println("Configuration file has been changed!")
+					//Reads the config again
+					config = readConfig()
+					//Checks again if the config is valid
+					checkConfig()
+					//if the files gets deleted, kill the process
+				} else if ev.IsDelete() {
+					log.Panic("The configuration file has been deleted!")
+					os.Exit(2)
+				}
+				break
+			case err := <-watcher.Error:
+				log.Println("error:", err)
+			}
+		}
+	}()
+
+	err = watcher.Watch(*configFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	/////////////////////////
+
+	///
+	//	Telegram bot inizialization
+	//		Initializes the telegram bot instance
+	///
 	bot, err := tgbotapi.NewBotAPI(config.BotToken)
 	//Checks for errors
 	if err != nil {
@@ -65,6 +115,7 @@ func main() {
 	}
 	//Silences the debug messages
 	bot.Debug = false
+	/////////////////////////
 
 	//Sets the IPs to check from the configuration file
 	IPs := config.IPList
