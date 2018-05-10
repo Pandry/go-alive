@@ -59,7 +59,8 @@ PingTimeout=2
 
 # TODOs:
 - Generate configuration file if not found nor inserted
-- Custom interval for every IP or class of IP
-- Async 
+- Custom wait interval for every IP or class of IP
+- Async ping
+- Ping a range
 - Custom DNS server
 - Disable auto-reload of the configuration
