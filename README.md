@@ -14,7 +14,7 @@ go build main.go
 # Options
 Unitl now there's only a `-f` option to set a different configuration file
 ```
--f                             sets the location of the configuration file
+-f, -file, --file                             sets the location of the configuration file
 
 ./goalive -f conf.alternative.toml
 ```
