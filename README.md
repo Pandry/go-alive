@@ -1,6 +1,7 @@
 # go-alive
 A simple program that checks every n seconds a given array of IP addresses and notifies via Telegram if one or more of the don't reply to the Echo request
 (Where n is a user-chosen variable)
+It is possible to change the configuration, and the changes will make immediate effect: the program will autoamtically update it.
 
 # Usage
 To install the software:
